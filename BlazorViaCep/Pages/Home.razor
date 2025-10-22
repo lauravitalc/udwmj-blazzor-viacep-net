@@ -1,0 +1,71 @@
+﻿@page "/"
+@using BlazorViaCep.Models
+@inject HttpClient Http
+
+<PageTitle>ViaCep API</PageTitle>
+
+<h1>ViaCep API</h1>
+
+<div class="form-group">
+    <label for="cep-input">
+        <input type="text" id="cep-input" class="form-control" @bind="cep" placeholder="Digite o CEP" />
+    </label>
+</div>
+
+<button class="btn btn-primary" @onclick="ConsultarCep">Consultar API</button>
+
+@if(endereco != null)
+{
+    <h3>Resultado da API:</h3>
+    <table class="table table-bordered">
+        <tbody>
+        <tr>
+            <td><strong>CEP:</strong></td>
+            <td>@endereco.cep</td>
+        </tr>
+        <tr>
+            <td><strong>Logradouro:</strong></td>
+            <td>@endereco.logradouro</td>
+        </tr>
+        <tr>
+            <td><strong>Cidade:</strong></td>
+            <td>@endereco.localidade</td>
+        </tr>
+        </tbody>
+    </table>
+}
+
+@code {
+    private string cep;
+    private Endereco endereco;
+    private string errorMessage;
+
+    private async Task ConsultarCep(){
+        errorMessage  = string.Empty;
+        endereco = null;
+
+        if(string.IsNullOrEmpty(cep)){
+            errorMessage = "Por favor, digite um CEP.";
+        }
+
+        string cepFormatado = new string(cep.Where(char.IsDigit).ToArray());
+
+        if(cepFormatado.Length != 8){
+            errorMessage = "O CEP deve conter 8 dígitos.";
+            return;
+        }
+
+        try {
+            string url = $"https://viacep.com.br/ws/{cepFormatado}/json/";
+
+            endereco = await Http.GetFromJsonAsync<Endereco>(url);
+
+            if(endereco.cep == null){
+                errorMessage = "CEP não encontrado ou inválido.";
+                endereco = null;
+            }
+        } catch (Exception ex){
+            errorMessage = $"Ocorreu um erro ao consultar o CEP: {ex.Message}";
+        }
+    }
+}
